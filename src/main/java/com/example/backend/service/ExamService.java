@@ -4,7 +4,7 @@ import com.example.backend.domain.Exam;
 import com.example.backend.domain.ExamSession;
 import com.example.backend.domain.SessionStatus;
 import com.example.backend.domain.Student;
-import com.example.backend.dto.ExamSessionResponse;
+import com.example.backend.dto.*;
 import com.example.backend.exception.BadRequestException;
 import com.example.backend.exception.ConflictException;
 import com.example.backend.exception.NotFoundException;
@@ -13,8 +13,6 @@ import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
-import com.example.backend.dto.QuestionPageResponse;
-import com.example.backend.dto.QuestionResponseDto;
 import com.example.backend.domain.Question;
 import com.example.backend.domain.StudentResponse;
 import org.springframework.data.domain.Page;
@@ -28,10 +26,7 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
-import com.example.backend.dto.AnswerDto;
-import com.example.backend.domain.Question;
-import com.example.backend.domain.StudentResponse;
-import org.springframework.http.HttpStatus;
+import java.time.LocalDateTime;
 
 
 @Service
@@ -166,6 +161,25 @@ public class ExamService {
 
             studentResponseRepository.save(response);
         }
+    }
+
+    @Transactional
+    public ExamSubmitResponse submitExam(Long sessionId) {
+        ExamSession session = examSessionRepository.findById(sessionId)
+                .orElseThrow(() -> new NotFoundException("Session not found"));
+
+        if (session.getStatus() != SessionStatus.STARTED) {
+            throw new ConflictException("Session already submitted or not started");
+        }
+
+        session.setStatus(SessionStatus.SUBMITTED);
+        session.setEndTime(LocalDateTime.now()); // submitTime
+
+        long answeredCount = studentResponseRepository.countAnsweredBySessionId(sessionId);
+        int totalCount = session.getExam().getQuestions().size();
+        int unansweredCount = totalCount - (int) answeredCount;
+
+        return new ExamSubmitResponse(answeredCount, totalCount, unansweredCount);
     }
 
 }

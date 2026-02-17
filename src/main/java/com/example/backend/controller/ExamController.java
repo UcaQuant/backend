@@ -1,6 +1,7 @@
 package com.example.backend.controller;
 
 import com.example.backend.dto.ExamSessionResponse;
+import com.example.backend.dto.ExamSubmitResponse;
 import com.example.backend.exception.BadRequestException;
 import com.example.backend.exception.ConflictException;
 import com.example.backend.exception.NotFoundException;
@@ -75,6 +76,14 @@ public class ExamController {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                 .body(Map.of("success", false, "message", ex.getMessage()));
     }
+
+    @PostMapping("/{sessionId}/submit")
+    public ResponseEntity<ExamSubmitResponse> submitExam(@PathVariable Long sessionId) {
+        ExamSubmitResponse response = examService.submitExam(sessionId);
+        return ResponseEntity.ok(response);
+    }
+
+
 
 
 }
