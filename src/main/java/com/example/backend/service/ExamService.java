@@ -5,6 +5,8 @@ import com.example.backend.domain.ExamSession;
 import com.example.backend.domain.SessionStatus;
 import com.example.backend.domain.Student;
 import com.example.backend.dto.ExamSessionResponse;
+import com.example.backend.exception.BadRequestException;
+import com.example.backend.exception.ConflictException;
 import com.example.backend.exception.NotFoundException;
 import com.example.backend.repository.*;
 import jakarta.transaction.Transactional;
@@ -25,6 +27,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
+
+import com.example.backend.dto.AnswerDto;
+import com.example.backend.domain.Question;
+import com.example.backend.domain.StudentResponse;
+import org.springframework.http.HttpStatus;
+
 
 @Service
 @RequiredArgsConstructor
@@ -117,4 +125,47 @@ public class ExamService {
                 session.getStartTime()
         );
     }
+
+    @Transactional
+    public void saveAnswers(Long sessionId, List<AnswerDto> answers) {
+
+        ExamSession session = examSessionRepository.findById(sessionId)
+                .orElseThrow(() -> new NotFoundException("Session not found"));
+
+        if (session.getStatus() != SessionStatus.STARTED) {
+            throw new ConflictException("Session is not active");
+        }
+
+        Exam exam = session.getExam();
+
+        for (AnswerDto dto : answers) {
+            // Validate question exists and belongs to this exam
+            Question question = questionRepository.findById(dto.getQuestionId())
+                    .orElseThrow(() -> new BadRequestException("Invalid question id: " + dto.getQuestionId()));
+
+            if (!question.getExam().getId().equals(exam.getId())) {
+                throw new BadRequestException("Question does not belong to this exam: " + dto.getQuestionId());
+            }
+
+            // Upsert StudentResponse
+            StudentResponse response = studentResponseRepository
+                    .findBySessionIdAndQuestionId(sessionId, dto.getQuestionId())
+                    .orElseGet(() -> {
+                        StudentResponse sr = new StudentResponse();
+                        sr.setSession(session);
+                        sr.setQuestion(question);
+                        return sr;
+                    });
+
+            response.setChosenIndex(dto.getSelectedOptionIndex());
+            response.setIsCorrect(
+                    question.getCorrectIndex() != null &&
+                            question.getCorrectIndex().equals(dto.getSelectedOptionIndex())
+            );
+            response.setSubmittedAt(LocalDateTime.now());
+
+            studentResponseRepository.save(response);
+        }
+    }
+
 }

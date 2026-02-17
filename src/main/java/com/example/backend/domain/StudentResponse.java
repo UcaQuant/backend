@@ -5,6 +5,8 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.time.LocalDateTime;
+
 @Entity
 @Data
 @Table(name = "student_responses", uniqueConstraints = {
@@ -27,4 +29,7 @@ public class StudentResponse {
 
     private Integer chosenIndex;
     private Boolean isCorrect;
+
+    @Column(name = "submitted_at")
+    private LocalDateTime submittedAt;
 }
