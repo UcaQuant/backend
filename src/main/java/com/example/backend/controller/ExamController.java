@@ -7,6 +7,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import com.example.backend.dto.QuestionPageResponse;
 
 import java.util.Map;
 import java.util.UUID;
@@ -32,5 +33,17 @@ public class ExamController {
                         "success", false,
                         "message", ex.getMessage()
                 ));
+    }
+
+    @GetMapping("/{sessionId}/questions")
+    public ResponseEntity<QuestionPageResponse> getQuestions(
+            @PathVariable Long sessionId,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "5") int size) {
+
+        QuestionPageResponse response =
+                examService.getExamQuestionsPage(sessionId, page, size);
+
+        return ResponseEntity.ok(response);
     }
 }
