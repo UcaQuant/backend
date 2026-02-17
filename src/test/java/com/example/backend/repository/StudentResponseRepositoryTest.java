@@ -15,7 +15,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 @DataJpaTest
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
-class StudentResponseRepositoryTest {
+public class StudentResponseRepositoryTest {
 
     @Autowired private StudentResponseRepository responseRepo;
     @Autowired private ExamSessionRepository sessionRepo;
