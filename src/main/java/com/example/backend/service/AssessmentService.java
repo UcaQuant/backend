@@ -7,6 +7,7 @@ import com.example.backend.repository.StudentResponseRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
@@ -48,10 +49,13 @@ public class AssessmentService {
         double mathPercentage = mathTotal == 0 ? 0 : ((double) mathCorrect / mathTotal) * 100;
         double englishPercentage = englishTotal == 0 ? 0 : ((double) englishCorrect / englishTotal) * 100;
 
+        LocalDateTime completedAt = LocalDateTime.now();
         //Return DTO including total score
         return new ExamResult(
                 mathCorrect, mathTotal, mathPercentage,
-                englishCorrect, englishTotal, englishPercentage
+                englishCorrect, englishTotal, englishPercentage,
+                completedAt
+
         );
     }
 }
