@@ -1,7 +1,6 @@
 package com.example.backend.controller;
 
-import com.example.backend.dto.ExamSessionResponse;
-import com.example.backend.dto.ExamSubmitResponse;
+import com.example.backend.dto.*;
 import com.example.backend.exception.BadRequestException;
 import com.example.backend.exception.ConflictException;
 import com.example.backend.exception.NotFoundException;
@@ -10,9 +9,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import com.example.backend.dto.QuestionPageResponse;
 
-import com.example.backend.dto.AnswerDto;
 import jakarta.validation.Valid;
 
 
@@ -83,7 +80,11 @@ public class ExamController {
         return ResponseEntity.ok(response);
     }
 
-
+    @PostMapping("/{sessionId}/finish")
+    public ResponseEntity<ExamFinishResponse> finishExam(@PathVariable Long sessionId) {
+        ExamFinishResponse response = examService.finishExam(sessionId);
+        return ResponseEntity.ok(response);
+    }
 
 
 }

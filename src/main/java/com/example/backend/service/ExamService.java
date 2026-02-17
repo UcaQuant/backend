@@ -38,6 +38,7 @@ public class ExamService {
     private final ExamSessionRepository examSessionRepository;
     private final QuestionRepository questionRepository;
     private final StudentResponseRepository studentResponseRepository;
+    private final ResultService resultService;
 
     @Transactional
     public ExamSessionResponse startExamSession(UUID studentId) {
@@ -181,5 +182,23 @@ public class ExamService {
 
         return new ExamSubmitResponse(answeredCount, totalCount, unansweredCount);
     }
+
+    @Transactional
+    public ExamFinishResponse finishExam(Long sessionId) {
+        ExamSession session = examSessionRepository.findById(sessionId)
+                .orElseThrow(() -> new NotFoundException("Session not found"));
+
+        if (session.getStatus() != SessionStatus.SUBMITTED) {
+            throw new ConflictException("Session must be SUBMITTED before finishing");
+        }
+
+        session.setStatus(SessionStatus.COMPLETED);
+
+        String reportPath = resultService.calculateResult(sessionId);
+        String downloadUrl = "/api/v1/reports/" + reportPath;
+
+        return new ExamFinishResponse(downloadUrl);
+    }
+
 
 }
