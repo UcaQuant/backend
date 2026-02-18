@@ -2,8 +2,10 @@ package com.example.backend.service;
 
 import com.example.backend.domain.Exam;
 import com.example.backend.domain.ExamSession;
+import com.example.backend.domain.Question;
 import com.example.backend.domain.SessionStatus;
 import com.example.backend.domain.Student;
+import com.example.backend.domain.StudentResponse;
 import com.example.backend.dto.*;
 import com.example.backend.exception.BadRequestException;
 import com.example.backend.exception.ConflictException;
@@ -11,23 +13,16 @@ import com.example.backend.exception.NotFoundException;
 import com.example.backend.repository.*;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Service;
-
-import com.example.backend.domain.Question;
-import com.example.backend.domain.StudentResponse;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
-
+import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
-
-import java.time.LocalDateTime;
-
 
 @Service
 @RequiredArgsConstructor
@@ -38,7 +33,7 @@ public class ExamService {
     private final ExamSessionRepository examSessionRepository;
     private final QuestionRepository questionRepository;
     private final StudentResponseRepository studentResponseRepository;
-    private final ResultService resultService;
+    private final AssessmentService assessmentService;
 
     @Transactional
     public ExamSessionResponse startExamSession(UUID studentId) {
@@ -46,16 +41,14 @@ public class ExamService {
         Student student = studentRepository.findById(studentId)
                 .orElseThrow(() -> new NotFoundException("Student not found"));
 
-        // Find active session for this student
-        var activeSessions = examSessionRepository.findByStudentIdAndStatus(studentId, SessionStatus.STARTED);
-        ExamSession activeSession = activeSessions.isEmpty() ? null : activeSessions.get(0);
-
-        if (activeSession != null) {
-            return toResponse(activeSession);
+        // Return existing active session if present
+        List<ExamSession> activeSessions = examSessionRepository
+                .findByStudentIdAndStatus(studentId, SessionStatus.STARTED);
+        if (!activeSessions.isEmpty()) {
+            return toResponse(activeSessions.get(0));
         }
 
-        // For now: pick first available exam (could be improved later)
-        // TODO: Replace with real exam selection logic when exam creation is implemented
+        // Pick first available exam
         Exam exam = examRepository.findAll().stream()
                 .findFirst()
                 .orElseThrow(() -> new NotFoundException("No active exam available"));
@@ -67,28 +60,23 @@ public class ExamService {
         session.setStartTime(LocalDateTime.now());
 
         ExamSession saved = examSessionRepository.save(session);
-
         return toResponse(saved);
     }
 
-    public QuestionPageResponse getExamQuestionsPage(Long sessionId, int page, int size) {
+    public QuestionPageResponse getExamQuestionsPage(UUID sessionId, int page, int size) {
         ExamSession session = examSessionRepository.findById(sessionId)
                 .orElseThrow(() -> new NotFoundException("Session not found"));
 
         if (session.getStatus() != SessionStatus.STARTED) {
-            throw new NotFoundException("Session is not active");
+            throw new ConflictException("Session is not active");
         }
 
         Exam exam = session.getExam();
+        Pageable pageable = PageRequest.of(page, Math.min(size, 20));
+        Page<Question> questionPage = questionRepository.findByExamId(exam.getId(), pageable);
 
-        Pageable pageable = PageRequest.of(page, size);
-        Page<Question> questionPage =
-                questionRepository.findByExamId(exam.getId(), pageable);
-
-        // Fetch existing answers for this session (map questionId -> chosenIndex)
-        List<StudentResponse> responses =
-                studentResponseRepository.findBySessionId(sessionId);
-
+        // Fetch existing answers for this session
+        List<StudentResponse> responses = studentResponseRepository.findBySessionId(sessionId);
         Map<Long, Integer> chosenByQuestionId = responses.stream()
                 .collect(Collectors.toMap(
                         r -> r.getQuestion().getId(),
@@ -100,7 +88,7 @@ public class ExamService {
                 .map(q -> new QuestionResponseDto(
                         q.getId(),
                         q.getContent(),
-                        q.getOptions(),                 // correctIndex NOT included
+                        q.getOptions(),   // correctIndex NOT included
                         chosenByQuestionId.get(q.getId())
                 ))
                 .toList();
@@ -113,17 +101,8 @@ public class ExamService {
         );
     }
 
-
-    private ExamSessionResponse toResponse(ExamSession session) {
-        return new ExamSessionResponse(
-                session.getId(),
-                session.getExam().getTimeLimitSeconds(),
-                session.getStartTime()
-        );
-    }
-
     @Transactional
-    public void saveAnswers(Long sessionId, List<AnswerDto> answers) {
+    public void saveAnswers(UUID sessionId, List<AnswerDto> answers) {
 
         ExamSession session = examSessionRepository.findById(sessionId)
                 .orElseThrow(() -> new NotFoundException("Session not found"));
@@ -135,7 +114,6 @@ public class ExamService {
         Exam exam = session.getExam();
 
         for (AnswerDto dto : answers) {
-            // Validate question exists and belongs to this exam
             Question question = questionRepository.findById(dto.getQuestionId())
                     .orElseThrow(() -> new BadRequestException("Invalid question id: " + dto.getQuestionId()));
 
@@ -143,7 +121,6 @@ public class ExamService {
                 throw new BadRequestException("Question does not belong to this exam: " + dto.getQuestionId());
             }
 
-            // Upsert StudentResponse
             StudentResponse response = studentResponseRepository
                     .findBySessionIdAndQuestionId(sessionId, dto.getQuestionId())
                     .orElseGet(() -> {
@@ -159,13 +136,12 @@ public class ExamService {
                             question.getCorrectIndex().equals(dto.getSelectedOptionIndex())
             );
             response.setSubmittedAt(LocalDateTime.now());
-
             studentResponseRepository.save(response);
         }
     }
 
     @Transactional
-    public ExamSubmitResponse submitExam(Long sessionId) {
+    public ExamSubmitResponse submitExam(UUID sessionId) {
         ExamSession session = examSessionRepository.findById(sessionId)
                 .orElseThrow(() -> new NotFoundException("Session not found"));
 
@@ -174,17 +150,18 @@ public class ExamService {
         }
 
         session.setStatus(SessionStatus.SUBMITTED);
-        session.setEndTime(LocalDateTime.now()); // submitTime
+        session.setSubmitTime(LocalDateTime.now());
+        examSessionRepository.save(session); // FIX: was missing
 
         long answeredCount = studentResponseRepository.countAnsweredBySessionId(sessionId);
-        int totalCount = session.getExam().getQuestions().size();
+        int totalCount = (int) questionRepository.countByExamId(session.getExam().getId());
         int unansweredCount = totalCount - (int) answeredCount;
 
         return new ExamSubmitResponse(answeredCount, totalCount, unansweredCount);
     }
 
     @Transactional
-    public ExamFinishResponse finishExam(Long sessionId) {
+    public ExamFinishResponse finishExam(UUID sessionId) {
         ExamSession session = examSessionRepository.findById(sessionId)
                 .orElseThrow(() -> new NotFoundException("Session not found"));
 
@@ -193,12 +170,20 @@ public class ExamService {
         }
 
         session.setStatus(SessionStatus.COMPLETED);
+        examSessionRepository.save(session);
 
-        String reportPath = resultService.calculateResult(sessionId);
-        String downloadUrl = "/api/v1/reports/" + reportPath;
+        // Trigger grading (idempotent – can be called again on PDF download)
+        assessmentService.calculateResult(sessionId);
 
+        String downloadUrl = "/api/v1/reports/" + sessionId + "/download";
         return new ExamFinishResponse(downloadUrl);
     }
 
-
+    private ExamSessionResponse toResponse(ExamSession session) {
+        return new ExamSessionResponse(
+                session.getId(),
+                session.getExam().getTimeLimitSeconds(),
+                session.getStartTime()
+        );
+    }
 }
