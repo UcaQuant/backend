@@ -23,7 +23,7 @@ public class ReportService {
         this.studentRepository = studentRepository;
     }
 
-    public byte[] generatePdf(UUID studentId, Long sessionId) throws Exception {
+    public byte[] generatePdf(UUID studentId, UUID sessionId) throws Exception {
         Student student = studentRepository.findById(studentId)
                 .orElseThrow(() -> new IllegalArgumentException("Student not found"));
 

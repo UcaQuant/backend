@@ -10,6 +10,7 @@ import org.springframework.boot.jpa.test.autoconfigure.TestEntityManager;
 import org.springframework.dao.DataIntegrityViolationException;
 
 import java.util.List;
+import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -25,7 +26,7 @@ public class ExamSessionRepositoryTest {
     // TestEntityManager is the secret sauce for reliable JPA tests
     @Autowired private TestEntityManager entityManager;
 
-    private Long sessionId;
+    private UUID sessionId;
     private Long questionId;
 
     @BeforeEach
