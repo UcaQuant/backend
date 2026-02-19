@@ -27,6 +27,11 @@ public class AdminExamController {
         return ResponseEntity.ok(examAuthoringService.getAllExams());
     }
 
+    @GetMapping("/results")
+    public ResponseEntity<List<com.example.backend.dto.TeacherStudentResultDto>> getAllResults() {
+        return ResponseEntity.ok(examAuthoringService.getAllStudentResults());
+    }
+
     @PostMapping("/exams")
     public ResponseEntity<Exam> createExam(@Valid @RequestBody CreateExamDto dto) {
         return ResponseEntity.status(HttpStatus.CREATED).body(examAuthoringService.createExam(dto));
