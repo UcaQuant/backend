@@ -29,6 +29,19 @@ public class StudentController {
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
+    @PostMapping("/login")
+    public ResponseEntity<StudentRegistrationResponse> login(
+            @Valid @RequestBody com.example.backend.dto.StudentLoginRequest request) {
+        StudentRegistrationResponse response = studentService.login(request);
+        return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/{studentId}/history")
+    public ResponseEntity<java.util.List<com.example.backend.dto.StudentExamHistoryDto>> getExamHistory(
+            @PathVariable java.util.UUID studentId) {
+        return ResponseEntity.ok(studentService.getExamHistory(studentId));
+    }
+
     // 400 – validation errors
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<Map<String, Object>> handleValidationErrors(MethodArgumentNotValidException ex) {

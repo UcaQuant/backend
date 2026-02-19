@@ -33,29 +33,27 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
-            .csrf(csrf -> csrf.disable())
-            .cors(cors -> cors.configurationSource(corsConfigurationSource()))
-            .sessionManagement(session ->
-                session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-            .authorizeHttpRequests(auth -> auth
-                // Public endpoints
-                .requestMatchers(
-                    "/api/v1/students",
-                    "/api/v1/exams/**",
-                    "/api/v1/reports/**",
-                    "/api/v1/auth/**",
-                    "/swagger-ui/**",
-                    "/swagger-ui.html",
-                    "/v3/api-docs/**",
-                    "/actuator/**"
-                ).permitAll()
-                // Role-based admin endpoints
-                .requestMatchers("/api/v1/manager/**").hasAnyRole("MANAGER", "ADMIN")
-                .requestMatchers("/api/v1/teacher/**").hasAnyRole("TEACHER", "ADMIN")
-                .requestMatchers("/api/v1/admin/**").hasRole("ADMIN")
-                .anyRequest().authenticated()
-            )
-            .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
+                .csrf(csrf -> csrf.disable())
+                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .authorizeHttpRequests(auth -> auth
+                        // Public endpoints
+                        .requestMatchers(
+                                "/api/v1/students/**",
+                                "/api/v1/exams/**",
+                                "/api/v1/reports/**",
+                                "/api/v1/auth/**",
+                                "/swagger-ui/**",
+                                "/swagger-ui.html",
+                                "/v3/api-docs/**",
+                                "/actuator/**")
+                        .permitAll()
+                        // Role-based admin endpoints
+                        .requestMatchers("/api/v1/manager/**").hasAnyRole("MANAGER", "ADMIN")
+                        .requestMatchers("/api/v1/teacher/**").hasAnyRole("TEACHER", "ADMIN")
+                        .requestMatchers("/api/v1/admin/**").hasRole("ADMIN")
+                        .anyRequest().authenticated())
+                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }

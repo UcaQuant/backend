@@ -19,4 +19,8 @@ public class StudentRegistrationRequest {
     @NotBlank(message = "Mobile number is mandatory")
     @Pattern(regexp = "\\d{10}", message = "Mobile number must be 10 digits")
     private String mobileNumber;
+
+    @NotBlank(message = "Password is mandatory")
+    @Size(min = 6, message = "Password must be at least 6 characters")
+    private String password;
 }

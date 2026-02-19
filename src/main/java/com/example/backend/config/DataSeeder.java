@@ -19,6 +19,7 @@ public class DataSeeder implements CommandLineRunner {
     private final UserRepository userRepository;
     private final ExamRepository examRepository;
     private final QuestionRepository questionRepository;
+    private final StudentRepository studentRepository;
     private final PasswordEncoder passwordEncoder;
 
     @Override
@@ -74,22 +75,29 @@ public class DataSeeder implements CommandLineRunner {
         // 10 Math questions
         List<String> opts = List.of("A", "B", "C", "D");
         String[] mathQuestions = {
-            "What is 2 + 2?",
-            "What is 5 × 6?",
-            "What is 100 ÷ 4?",
-            "What is the square root of 81?",
-            "What is 15% of 200?",
-            "Solve: 3x = 12. What is x?",
-            "What is the area of a rectangle with length 5 and width 3?",
-            "What is 2³?",
-            "What is the perimeter of a square with side 4?",
-            "What is 7² - 5²?"
+                "What is 2 + 2?",
+                "What is 5 × 6?",
+                "What is 100 ÷ 4?",
+                "What is the square root of 81?",
+                "What is 15% of 200?",
+                "Solve: 3x = 12. What is x?",
+                "What is the area of a rectangle with length 5 and width 3?",
+                "What is 2³?",
+                "What is the perimeter of a square with side 4?",
+                "What is 7² - 5²?"
         };
-        int[] mathAnswers = {1, 2, 3, 0, 1, 3, 2, 1, 0, 3}; // index of correct option
+        int[] mathAnswers = { 1, 2, 3, 0, 1, 3, 2, 1, 0, 3 }; // index of correct option
 
         for (int i = 0; i < mathQuestions.length; i++) {
             Question q = new Question();
             q.setExam(exam);
+            Student student = new Student();
+            student.setFirstname("John");
+            student.setLastname("Doe");
+            student.setMobileNumber("1234567890");
+            student.setPassword("password123"); // Set default password
+
+            Student savedStudent = studentRepository.save(student);
             q.setSubject(Subject.MATH);
             q.setContent(mathQuestions[i]);
             q.setOptions(opts);
@@ -99,18 +107,18 @@ public class DataSeeder implements CommandLineRunner {
 
         // 10 English questions
         String[] englishQuestions = {
-            "Which word is a noun?",
-            "Choose the correct spelling:",
-            "What is the past tense of 'run'?",
-            "Which sentence is grammatically correct?",
-            "What does 'benevolent' mean?",
-            "Choose the correct article: ___ apple",
-            "What is the plural of 'child'?",
-            "Which is an adjective?",
-            "What does the prefix 'un-' mean?",
-            "Choose the correct conjunction: I like tea ___ coffee."
+                "Which word is a noun?",
+                "Choose the correct spelling:",
+                "What is the past tense of 'run'?",
+                "Which sentence is grammatically correct?",
+                "What does 'benevolent' mean?",
+                "Choose the correct article: ___ apple",
+                "What is the plural of 'child'?",
+                "Which is an adjective?",
+                "What does the prefix 'un-' mean?",
+                "Choose the correct conjunction: I like tea ___ coffee."
         };
-        int[] englishAnswers = {0, 2, 1, 3, 0, 2, 1, 3, 0, 2};
+        int[] englishAnswers = { 0, 2, 1, 3, 0, 2, 1, 3, 0, 2 };
 
         for (int i = 0; i < englishQuestions.length; i++) {
             Question q = new Question();
