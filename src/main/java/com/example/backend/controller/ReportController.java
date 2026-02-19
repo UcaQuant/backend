@@ -36,7 +36,11 @@ public class ReportController {
 
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_PDF);
-        headers.setContentDispositionFormData("attachment", "report_" + sessionId + ".pdf");
+        org.springframework.http.ContentDisposition contentDisposition = org.springframework.http.ContentDisposition
+                .attachment()
+                .filename("report_" + sessionId + ".pdf")
+                .build();
+        headers.setContentDisposition(contentDisposition);
 
         return ResponseEntity.ok()
                 .headers(headers)
